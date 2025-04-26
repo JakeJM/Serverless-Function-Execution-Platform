@@ -9,5 +9,7 @@ chmod +x setup-environment.sh start-all.sh
 
 To stop:
 docker-compose -f docker-compose.frontend.yml down (Add -v if you desire to clear the database)
+
 docker ps -q --filter "ancestor=python-function" | xargs -r docker stop
+
 docker ps -q --filter "ancestor=python-function" | xargs -r docker rm
