@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./functions:/app/functions
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./execution/images:/app/images
+      - ./functions:/functions
+    user: root
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/functions_db
+  
+  db:
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=functions_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d functions_db"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://web:80
+    depends_on:
+      - web
+    volumes:
+      - ./frontend:/app/frontend
+    restart: unless-stopped
+
+volumes:
+  postgres_data: 
